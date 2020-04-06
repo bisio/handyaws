@@ -1,27 +1,28 @@
 package com.handy.aws.functions;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.google.gson.Gson;
 
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.core.ResponseInputStream;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-
-import com.google.gson.Gson;
-import java.util.List;
-
-public class InventoryFindFunction implements RequestHandler<Object, String> {
+public class InventoryFindFunction implements RequestHandler<HttpQuerystringRequest, String> {
 
     @Override
-    public String handleRequest(Object input, Context context) {
-        context.getLogger().log("Input: " + input);
+    public String handleRequest(HttpQuerystringRequest request, Context context) {
+        context.getLogger().log("Input: " + request);
+        String id = request.getQueryStringParameters().get("id");
+        return getProductById(Integer.parseInt(id)).toString();
+    }
 
-        Region  region = Region.EU_WEST_1;
+	private Product getProductById(int prodId) {
+		Region  region = Region.EU_WEST_1;
         S3Client s3Client = S3Client.builder().region(region).build();
         ResponseInputStream<?> objectData = s3Client.getObject(GetObjectRequest.builder()
         		.bucket("handy-inventory-data-bisio")
@@ -35,8 +36,11 @@ public class InventoryFindFunction implements RequestHandler<Object, String> {
         
         products = gson.fromJson(br, Product[].class);
         
-        return products[0].toString();
-        
-    }
-
+        for (Product prod : products) {
+        	if (prod.getId() == prodId) {
+        		return prod;
+        	}
+        }
+        return null;
+	}
 }
