@@ -12,6 +12,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import com.google.gson.Gson;
+import java.util.List;
+
 public class InventoryFindFunction implements RequestHandler<Object, String> {
 
     @Override
@@ -22,21 +25,18 @@ public class InventoryFindFunction implements RequestHandler<Object, String> {
         S3Client s3Client = S3Client.builder().region(region).build();
         ResponseInputStream<?> objectData = s3Client.getObject(GetObjectRequest.builder()
         		.bucket("handy-inventory-data-bisio")
-        		.key("s3testdata.txt")
+        		.key("handy-tool-catalog.json")
         		.build());
         InputStreamReader isr = new InputStreamReader(objectData);
         BufferedReader br = new BufferedReader(isr);
+
+        Product[] products = null;
+        Gson gson = new Gson();
         
-        String outputString = null;
-        try {
-			outputString = br.readLine();
-			br.close();
-		} catch (IOException e) {
-			context.getLogger().log("An Exception was generated when attempting to readLine()");
-			e.printStackTrace();
-		}
+        products = gson.fromJson(br, Product[].class);
         
-        return outputString;
+        return products[0].toString();
+        
     }
 
 }
